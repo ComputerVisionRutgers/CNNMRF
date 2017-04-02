@@ -37,6 +37,6 @@ function FPLayer:updateOutput(input)
 end
 
 function FPLayer:updateGradInput(input, gradOutput)
-	self.gradInput = gradOutput:cmul(self.mask.add_dummy():expandAs(input))
+	self.gradInput = gradOutput:cmul(self.mask:add_dummy():expandAs(input))
 	return self.gradInput
 end
