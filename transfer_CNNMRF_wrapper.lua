@@ -442,7 +442,7 @@ local function main(params)
 			local priorfile = 'data/face_prior/' .. params.content_name .. '_fp.png'
 			if paths.filep(priorfile) then
 				print('Using Facial Prior: ', priorfile)
-				local prior = Ploader:get(params.content_name, 50, 0.75)
+				local prior = Ploader:get(params.content_name, 50, 5)
 				local fplayer = nn.FacePriorLayer(prior)
 				if params.gpu >= 0 then
           if params.backend == 'cudnn' then
