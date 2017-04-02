@@ -17,7 +17,7 @@ require 'image'
 local M = {}
 
 -- load the binary prior image and do gaussian blur
-function M.get(name, size)
+function M:get(name, size)
 	size = size or 30
 	local img = image.load('data/face_prior/' .. name .. '_fp.png',1,'float')
 	local kernel = image.gaussian(size):float()
