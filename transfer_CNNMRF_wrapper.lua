@@ -421,7 +421,21 @@ local function main(params)
         end
       end
 
-
+      -----------------------------------------------------
+      -- add a tv layer
+      -----------------------------------------------------
+      if params.tv_weight > 0 then
+        local tv_mod = nn.TVLoss(params.tv_weight):float()
+        if params.gpu >= 0 then
+          if params.backend == 'cudnn' then
+            tv_mod:cuda()
+          else
+            tv_mod:cl()
+          end
+        end
+        i_net_layer = i_net_layer + 1
+        net:add(tv_mod)
+      end
       -----------------------------------------------------
       -- add a facial prior layer
       -----------------------------------------------------
@@ -440,21 +454,6 @@ local function main(params)
         i_net_layer = i_net_layer + 1
 				net:add(fplayer)
 			end
-      -----------------------------------------------------
-      -- add a tv layer
-      -----------------------------------------------------
-      if params.tv_weight > 0 then
-        local tv_mod = nn.TVLoss(params.tv_weight):float()
-        if params.gpu >= 0 then
-          if params.backend == 'cudnn' then
-            tv_mod:cuda()
-          else
-            tv_mod:cl()
-          end
-        end
-        i_net_layer = i_net_layer + 1
-        net:add(tv_mod)
-      end
 
       for i = 1, #cnn do
         if next_content_idx <= #content_layers_pretrained or next_mrf_idx <= #mrf_layers_pretrained then
