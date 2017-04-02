@@ -29,7 +29,7 @@ function FPLayer:updateOutput(input)
 		print('input size: ', input:size())
 		if cutorch then
 			local map = hzproc.Table.Resize(mW, mH, WW, HH)
-			self.mask = hzproc.Remap.Bilinear(self.mask, map)
+			self.mask = hzproc.Remap.Bilinear(self.mask:add_dummy(), map):squeeze()
 		else
 			self.mask = image.scale(self.mask, WW, HH)
 		end
