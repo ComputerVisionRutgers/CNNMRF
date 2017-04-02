@@ -371,6 +371,11 @@ local function main(params)
     require 'cudnn'
   end
 
+	-- load utils after known architecture
+	require 'mylib.utils'
+	require 'mylib.faceprior'
+	local Ploader = require 'mylib.maskLoader'
+
   local loadcaffe_backend = params.backend
   if params.backend == 'clnn' then
     loadcaffe_backend = 'nn'
@@ -416,6 +421,25 @@ local function main(params)
         end
       end
 
+
+      -----------------------------------------------------
+      -- add a facial prior layer
+      -----------------------------------------------------
+			local priorfile = 'data/face_prior/' .. params.style_name .. '_fp.png'
+			if paths.file(priorfile) then
+				print('Using Facial Prior: ', priorfile)
+				local prior = Ploader(params.style_name, 30)
+				local fplayer = nn.FacePriorLayer(prior)
+				if params.gpu >= 0 then
+          if params.backend == 'cudnn' then
+            fplayer:cuda()
+          else
+            fplayer:cl()
+          end
+        end
+        i_net_layer = i_net_layer + 1
+				net:add(fplayer)
+			end
       -----------------------------------------------------
       -- add a tv layer
       -----------------------------------------------------

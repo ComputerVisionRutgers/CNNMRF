@@ -13,8 +13,6 @@
 --      derived from this software 
 --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-require 'mylib.utils'
-
 local FPLayer, parent = torch.class('nn.FacePriorLayer', 'nn.Module')
 
 function FPLayer:__init(mask)
@@ -23,11 +21,15 @@ function FPLayer:__init(mask)
 end
 
 function FPLayer:updateOutput(input)
-	self.output = input:cmul(mask.add_dummy():expandAs(input))
+	local HH, WW = input:size(2), input:size(3)
+	if HH ~= self.mask:size(1) or WW ~= self.mask:size(2) then
+		self.mask = image.scale(self.mask, WW, HH)
+	end
+	self.output = input:cmul(self.mask.add_dummy():expandAs(input))
 	return self.output
 end
 
 function FPLayer:updateGradInput(input, gradOutput)
-	self.gradInput = gradOutput:cmul(mask.add_dummy():expandAs(input))
+	self.gradInput = gradOutput:cmul(self.mask.add_dummy():expandAs(input))
 	return self.gradInput
 end
