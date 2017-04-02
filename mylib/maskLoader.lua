@@ -17,10 +17,11 @@ require 'image'
 local M = {}
 
 -- load the binary prior image and do gaussian blur
-function M:get(name, size)
+function M:get(name, size, sigma)
 	size = size or 30
+	sigma = sigma or 0.5
 	local img = image.load('data/face_prior/' .. name .. '_fp.png',1,'float')
-	local kernel = image.gaussian(size):float()
+	local kernel = image.gaussian(size, sigma):float()
 	img = image.convolve(img, kernel, 'same')
 	return 1-(img-img:min()):div(img:max()-img:min())
 end
