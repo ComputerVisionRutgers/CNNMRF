@@ -32,7 +32,7 @@ function FPLayer:updateOutput(input)
 			self.mask = image.scale(self.mask, WW, HH)
 		end
 	end
-	self.output = input:cmul(self.mask:add_dummy():expandAs(input))
+	self.output = input
 	return self.output
 end
 
