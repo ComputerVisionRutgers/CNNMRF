@@ -13,6 +13,7 @@
 --      derived from this software 
 --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+require 'image'
 local FPLayer, parent = torch.class('nn.FacePriorLayer', 'nn.Module')
 
 function FPLayer:__init(mask)
