@@ -18,6 +18,7 @@ local FPLayer, parent = torch.class('nn.FacePriorLayer', 'nn.Module')
 
 function FPLayer:__init(prior)
 	parent.__init(self)
+	self.baseMask = prior:clone()
 	self.mask = prior:clone()
 end
 
@@ -26,8 +27,8 @@ function FPLayer:updateOutput(input)
 	local mH, mW = self.mask:size(1), self.mask:size(2)
 	if HH ~= mH or WW ~= mW then
 		if cutorch then
-			local map = hzproc.Table.Resize(mW, mH, WW, HH)
-			self.mask = hzproc.Remap.Bilinear(self.mask:add_dummy(), map):squeeze()
+			local map = hzproc.Table.Resize(self.baseMask:size(2), self.baseMask:size(1), WW, HH)
+			self.mask = hzproc.Remap.Bilinear(self.baseMask:add_dummy(), map):squeeze()
 		else
 			self.mask = image.scale(self.mask, WW, HH)
 		end
