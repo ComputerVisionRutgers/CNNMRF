@@ -25,17 +25,14 @@ function FPLayer:updateOutput(input)
 	local HH, WW = input:size(2), input:size(3)
 	local mH, mW = self.mask:size(1), self.mask:size(2)
 	if HH ~= mH or WW ~= mW then
-		print('original mask size:', self.mask:size())
-		print('input size: ', input:size())
 		if cutorch then
 			local map = hzproc.Table.Resize(mW, mH, WW, HH)
 			self.mask = hzproc.Remap.Bilinear(self.mask:add_dummy(), map):squeeze()
 		else
 			self.mask = image.scale(self.mask, WW, HH)
 		end
-		print('new mask size:', self.mask:size())
 	end
-	self.output = input:cmul(self.mask.add_dummy():expandAs(input))
+	self.output = input:cmul(self.mask.:add_dummy():expandAs(input))
 	return self.output
 end
 
