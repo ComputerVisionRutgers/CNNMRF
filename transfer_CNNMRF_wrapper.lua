@@ -439,10 +439,10 @@ local function main(params)
       -----------------------------------------------------
       -- add a facial prior layer
       -----------------------------------------------------
-			local priorfile = 'data/face_prior/' .. params.style_name .. '_fp.png'
+			local priorfile = 'data/face_prior/' .. params.content_name .. '_fp.png'
 			if paths.filep(priorfile) then
 				print('Using Facial Prior: ', priorfile)
-				local prior = Ploader:get(params.style_name, 50, 0.75)
+				local prior = Ploader:get(params.content_name, 50, 0.75)
 				local fplayer = nn.FacePriorLayer(prior)
 				if params.gpu >= 0 then
           if params.backend == 'cudnn' then
