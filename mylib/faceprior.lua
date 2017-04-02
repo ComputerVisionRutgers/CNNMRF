@@ -16,9 +16,9 @@
 require 'image'
 local FPLayer, parent = torch.class('nn.FacePriorLayer', 'nn.Module')
 
-function FPLayer:__init(mask)
+function FPLayer:__init(prior)
 	parent.__init(self)
-	self.mask = mask:clone()
+	self.mask = prior:clone()
 end
 
 function FPLayer:updateOutput(input)
