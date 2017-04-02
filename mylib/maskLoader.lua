@@ -21,9 +21,16 @@ function M:get(name, size, sigma)
 	size = size or 30
 	sigma = sigma or 0.5
 	local img = image.load('data/face_prior/' .. name .. '_fp.png',1,'float')
+	local mask = image.load('data/mask/' .. name .. '.png',1,'float')
 	local kernel = image.gaussian(size, sigma):float()
 	img = image.convolve(img, kernel, 'same')
-	return 1-(img-img:min()):div(img:max()-img:min())
+	img = 1-(img-img:min()):div(img:max()-img:min())
+	if img:size(1)~= mask:size(1) or img:size(2)~= mask:size(2) then
+		mask = image.scale(mask, img:size(2), img:size(1))
+	end
+	img = img:cmul(mask)
+	image.display(img)
+	return img
 end
 
 return M
