@@ -25,6 +25,7 @@ function FPLayer:updateOutput(input)
 	local HH, WW = input:size(2), input:size(3)
 	if HH ~= self.mask:size(1) or WW ~= self.mask:size(2) then
 		print('original mask size:', self.mask:size())
+		print('input size: ', input:size())
 		self.mask = image.scale(self.mask, WW, HH)
 		print('new mask size:', self.mask:size())
 	end
