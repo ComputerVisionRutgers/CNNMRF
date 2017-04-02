@@ -426,7 +426,7 @@ local function main(params)
       -- add a facial prior layer
       -----------------------------------------------------
 			local priorfile = 'data/face_prior/' .. params.style_name .. '_fp.png'
-			if paths.file(priorfile) then
+			if paths.filep(priorfile) then
 				print('Using Facial Prior: ', priorfile)
 				local prior = Ploader(params.style_name, 30)
 				local fplayer = nn.FacePriorLayer(prior)
