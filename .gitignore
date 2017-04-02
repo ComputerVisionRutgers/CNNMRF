@@ -1,1 +1,4 @@
-data/*
+data/models
+*.DS_Store
+*.swp
+*.t7
