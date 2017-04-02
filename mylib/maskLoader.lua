@@ -29,7 +29,8 @@ function M:get(name, size, sigma)
 		mask = image.scale(mask, img:size(2), img:size(1))
 	end
 	img = img:cmul(mask)
-	image.display(img)
+	image.save('facial_prior.jpg', img)
+	--image.display(img)
 	return img
 end
 
