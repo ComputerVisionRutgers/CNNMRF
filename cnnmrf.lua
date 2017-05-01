@@ -74,6 +74,8 @@ cmd:option('-nCorrection', 25)
 cmd:option('-print_iter', 10)
 cmd:option('-save_iter', 10)
 
+cmd:option('-proto_file2', 'data/models/VGG_FACE_deploy.prototxt')
+cmd:option('-model_file2', 'data/models/VGG_FACE.caffemodel')
 params = cmd:parse(arg)
 
 

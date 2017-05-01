@@ -389,7 +389,18 @@ local function main(params)
     end
   end
   print('cnn succesfully loaded')
-
+  
+  -- load vgg face 
+  local cnn2 = loadcaffe.load(params.proto_file2, params.model_file2, loadcaffe_backend):float()
+  if params.gpu >= 0 then
+    if params.backend == 'cudnn' then
+      cnn2:cuda()
+    else
+      cnn2:cl()
+    end
+  end
+  print('cnn2 succesfully loaded')
+  
   for i_res = 1, params.num_res do
     local timer = torch.Timer()
 
@@ -455,9 +466,9 @@ local function main(params)
 				net:add(fplayer)
 			end
 
-      for i = 1, #cnn do
-        if next_content_idx <= #content_layers_pretrained or next_mrf_idx <= #mrf_layers_pretrained then
-          local layer = cnn:get(i)
+      for i = 1, #cnn2 do
+        if next_content_idx <= #content_layers_pretrained then
+          local layer = cnn2:get(i)
 
           i_net_layer = i_net_layer + 1
           net:add(layer)
@@ -466,6 +477,19 @@ local function main(params)
           if i == content_layers_pretrained[next_content_idx] then
             add_content()
           end
+
+        end
+      end -- for i = 1, #cnn2 do
+
+      cnn2 = nil
+      collectgarbage()
+      
+      for i = 1, #cnn do
+        if next_mrf_idx <= #mrf_layers_pretrained then
+          local layer = cnn:get(i)
+
+          i_net_layer = i_net_layer + 1
+          net:add(layer)
 
           -- -- add mrfstatsyn layer
           if i == mrf_layers_pretrained[next_mrf_idx] then
