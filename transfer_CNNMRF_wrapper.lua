@@ -34,6 +34,9 @@ local function main(params)
   local cur_res
   local content_layers_pretrained = params.content_layers
   local mrf_layers_pretrained = params.mrf_layers
+  local net2 = nn.Sequential()
+  local next_content2_idx = 1
+  local i_net2_layer = 0
 
   -----------------------------------------------------------------------------------
   -- read images
@@ -99,6 +102,43 @@ local function main(params)
     table.insert(content_layers, i_content_layer, i_net_layer)
   end
 
+  local function add_content2()
+    local source =  pyramid_source_image_caffe[cur_res]:clone()
+    if params.gpu >= 0 then
+      if params.backend == 'cudnn' then
+        source = source:cuda()
+      else
+        source = source:cl()
+      end
+    end
+    local feature = net2:forward(source):clone() -- generate the content target using content image
+    if params.gpu >= 0 then
+      if params.backend == 'cudnn' then
+        feature = feature:cuda()
+      else
+        feature = feature:cl()
+      end
+    end
+
+    local norm = params.normalize_gradients
+    print(params.normalize_gradients)
+    local loss_module = nn.ContentLoss(params.content_weight, feature, norm):float()
+    if params.gpu >= 0 then
+      if params.backend == 'cudnn' then
+        loss_module:cuda()
+      else
+        loss_module:cl()
+      end
+    end
+
+    i_content_layer = i_content_layer + 1
+    i_net2_layer = i_net2_layer + 1
+    next_content_idx = next_content_idx + 1
+    net2:add(loss_module)
+    table.insert(content_losses, loss_module)
+    table.insert(content_layers, i_content_layer, i_net2_layer)
+  end
+
   local function update_content(idx_layer, idx_content)
     local source =  pyramid_source_image_caffe[cur_res]:clone()
     if params.gpu >= 0 then
@@ -130,6 +170,36 @@ local function main(params)
     net:get(idx_layer):update(loss_module)
   end
 
+  local function update_content2(idx_layer, idx_content)
+    local source =  pyramid_source_image_caffe[cur_res]:clone()
+    if params.gpu >= 0 then
+      if params.backend == 'cudnn' then
+        source = source:cuda()
+      else
+        source = source:cl()
+      end
+    end
+    net2:forward(source)
+    local feature = net2:get(idx_layer).output:clone()
+    if params.gpu >= 0 then
+      if params.backend == 'cudnn' then
+        feature = feature:cuda()
+      else
+        feature = feature:cl()
+      end
+    end
+
+    local norm = params.normalize_gradients
+    local loss_module = nn.ContentLoss(params.content_weight, feature, norm):float()
+    if params.gpu >= 0 then
+      if params.backend == 'cudnn' then
+        loss_module:cuda()
+      else
+        loss_module:cl()
+      end
+    end
+    net2:get(idx_layer):update(loss_module)
+  end
 
   -- --------------------------------------------------------------------------------------------------------
   -- -- local function for adding a mrf layer, with image rotation andn scaling
@@ -339,7 +409,10 @@ local function main(params)
   local function feval(x)
     num_calls = num_calls + 1
     net:forward(x)
-    local grad = net:backward(x, dy)
+    local grad1 = net:backward(x, dy)
+    net2:forward(x)
+    local grad2 = net2:backward(x, dy2)
+    local grad = grad1 + 0.01* grad2
     local loss = 0
     collectgarbage()
 
@@ -389,7 +462,7 @@ local function main(params)
     end
   end
   print('cnn succesfully loaded')
-  
+
   -- load vgg face 
   local cnn2 = loadcaffe.load(params.proto_file2, params.model_file2, loadcaffe_backend):float()
   if params.gpu >= 0 then
@@ -400,7 +473,7 @@ local function main(params)
     end
   end
   print('cnn2 succesfully loaded')
-  
+
   for i_res = 1, params.num_res do
     local timer = torch.Timer()
 
@@ -446,16 +519,18 @@ local function main(params)
         end
         i_net_layer = i_net_layer + 1
         net:add(tv_mod)
+        i_net2_layer = i_net2_layer + 1
+        net2:add(tv_mod)
       end
       -----------------------------------------------------
       -- add a facial prior layer
       -----------------------------------------------------
-			local priorfile = 'data/face_prior/' .. params.content_name .. '_fp.png'
-			if paths.filep(priorfile) then
-				print('Using Facial Prior: ', priorfile)
-				local prior = Ploader:get(params.content_name, 65, 30)
-				local fplayer = nn.FacePriorLayer(prior)
-				if params.gpu >= 0 then
+      local priorfile = 'data/face_prior/' .. params.content_name .. '_fp.png'
+	if paths.filep(priorfile) then
+	 print('Using Facial Prior: ', priorfile)
+	 local prior = Ploader:get(params.content_name, 65, 30)
+	 local fplayer = nn.FacePriorLayer(prior)
+	 if params.gpu >= 0 then
           if params.backend == 'cudnn' then
             fplayer:cuda()
           else
@@ -463,26 +538,10 @@ local function main(params)
           end
         end
         i_net_layer = i_net_layer + 1
-				net:add(fplayer)
-			end
-
-      for i = 1, #cnn2 do
-        if next_content_idx <= #content_layers_pretrained then
-          local layer = cnn2:get(i)
-
-          i_net_layer = i_net_layer + 1
-          net:add(layer)
-
-          -- add a content_losses layer
-          if i == content_layers_pretrained[next_content_idx] then
-            add_content()
-          end
-
-        end
-      end -- for i = 1, #cnn2 do
-
-      cnn2 = nil
-      collectgarbage()
+	net:add(fplayer)
+        i_net2_layer = i_net2_layer + 1
+	net2:add(fplayer)
+	end
       
       for i = 1, #cnn do
         if next_mrf_idx <= #mrf_layers_pretrained then
@@ -501,11 +560,29 @@ local function main(params)
 
         end
       end -- for i = 1, #cnn do
+      
+      for i = 1, #cnn2 do
+        if next_content_idx <= #content_layers_pretrained then
+          local layer = cnn2:get(i)
 
+          i_net2_layer = i_net2_layer + 1
+          net2:add(layer)
+
+          -- add a content_losses layer
+          if i == content_layers_pretrained[next_content_idx] then
+            add_content2()
+          end
+
+        end
+      end -- for i = 1, #cnn2 do
+
+      cnn2 = nil
+      collectgarbage()
       cnn = nil
       collectgarbage()
 
       print(net)
+      print(net2)
 
       print('content_layers: ')
       for i = 1, #content_layers do
@@ -530,7 +607,9 @@ local function main(params)
 
       -- -- update content layers
       for i_layer = 1, #content_layers do
-        update_content(content_layers[i_layer], i_layer)
+        print('i_layer = ', i_layer)
+        print('content_layers[i_layer] = ',content_layers[i_layer])
+        update_content2(content_layers[i_layer], i_layer)
         -- print(string.format('content_layers %d has been updated', content_layers[i_layer]))
       end
 
@@ -560,6 +639,9 @@ local function main(params)
     y = net:forward(input_image)
     dy = input_image.new(#y):zero()
 
+    y2 = net2:forward(input_image)
+    dy2 = input_image.new(#y2):zero()
+
     -- do optimizatoin
     local x, losses = mylbfgs(feval, input_image, optim_state, nil, mask)
 
@@ -568,6 +650,7 @@ local function main(params)
   end
 
   net = nil
+  net2 = nil
   source_image = nil
   target_image = nil
   pyramid_source_image_caffe = nil
