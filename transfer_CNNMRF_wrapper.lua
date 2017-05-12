@@ -412,7 +412,7 @@ local function main(params)
     local grad1 = net:backward(x, dy)
     net2:forward(x)
     local grad2 = net2:backward(x, dy2)
-    local grad = grad1 + 0.01* grad2
+    local grad = grad1 + grad2
     local loss = 0
     collectgarbage()
 
@@ -510,17 +510,20 @@ local function main(params)
       -----------------------------------------------------
       if params.tv_weight > 0 then
         local tv_mod = nn.TVLoss(params.tv_weight):float()
+        local tv_mod2 = nn.TVLoss(params.tv_weight):float()
         if params.gpu >= 0 then
           if params.backend == 'cudnn' then
             tv_mod:cuda()
+            tv_mod2:cuda()
           else
             tv_mod:cl()
+            tv_mod2:cl()
           end
         end
         i_net_layer = i_net_layer + 1
         net:add(tv_mod)
         i_net2_layer = i_net2_layer + 1
-        net2:add(tv_mod.clone())
+        net2:add(tv_mod2)
       end
       -----------------------------------------------------
       -- add a facial prior layer
@@ -530,17 +533,20 @@ local function main(params)
 	 print('Using Facial Prior: ', priorfile)
 	 local prior = Ploader:get(params.content_name, 65, 30)
 	 local fplayer = nn.FacePriorLayer(prior)
+	 local fplayer2 = nn.FacePriorLayer(prior)
 	 if params.gpu >= 0 then
           if params.backend == 'cudnn' then
             fplayer:cuda()
+            fplayer2:cuda()
           else
             fplayer:cl()
+            fplayer2:cl()
           end
         end
         i_net_layer = i_net_layer + 1
 	net:add(fplayer)
         i_net2_layer = i_net2_layer + 1
-	net2:add(fplayer.clone())
+	net2:add(fplayer2)
 	end
       
       for i = 1, #cnn do
