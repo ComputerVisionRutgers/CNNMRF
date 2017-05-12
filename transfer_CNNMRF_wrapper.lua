@@ -520,7 +520,7 @@ local function main(params)
         i_net_layer = i_net_layer + 1
         net:add(tv_mod)
         i_net2_layer = i_net2_layer + 1
-        net2:add(tv_mod)
+        net2:add(tv_mod.clone())
       end
       -----------------------------------------------------
       -- add a facial prior layer
@@ -540,7 +540,7 @@ local function main(params)
         i_net_layer = i_net_layer + 1
 	net:add(fplayer)
         i_net2_layer = i_net2_layer + 1
-	net2:add(fplayer)
+	net2:add(fplayer.clone())
 	end
       
       for i = 1, #cnn do
